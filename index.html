@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How does American region’s temperature change through time</title>
+  <link rel="stylesheet" href="./style.css" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm"></script>
+</head>
+<body>
+  <main class="page">
+    <h1>How does American region’s temperature change through time</h1>
+
+    <!-- Controls -->
+    <section class="controls" aria-labelledby="controls-title">
+      <h2 id="controls-title" class="visually-hidden">Controls</h2>
+
+      <label for="variable">Variable</label>
+      <select id="variable">
+        <option value="temp" selected>Temperature (K)</option>
+        <option value="rate">Rate of change (ΔK / month)</option>
+      </select>
+
+      <label for="time">Month</label>
+      <input id="time" type="range" min="0" max="0" step="1" value="0" />
+      <output id="time-label" for="time">—</output>
+    </section>
+
+    <!-- Viz stage -->
+    <section class="viz">
+      <div class="stage">
+        <!-- Canvas: 1px per grid cell; CSS scales it up -->
+        <canvas id="heatmap" aria-label="Temperature heatmap of the Americas"></canvas>
+
+        <!-- Hover tooltip -->
+        <dl id="tooltip" class="tooltip" hidden>
+          <dt>Date</dt><dd id="tt-date"></dd>
+          <dt>Lat</dt><dd id="tt-lat"></dd>
+          <dt>Lon</dt><dd id="tt-lon"></dd>
+          <dt>Value</dt><dd id="tt-val"></dd>
+        </dl>
+      </div>
+
+      <!-- Legend -->
+      <figure class="legend-block">
+        <svg id="legend" viewBox="0 0 360 50" role="img" aria-label="Color legend">
+          <!-- gradient bar and ticks are injected by main.js -->
+        </svg>
+        <figcaption id="legend-caption">Temperature (K)</figcaption>
+      </figure>
+    </section>
+
+    <!-- Short write-up (meets deliverable) -->
+    <section class="writeup">
+      <h2>Design notes</h2>
+      <p>
+        The heatmap shows monthly near-surface air temperature over the Americas (CMIP6 “Amon / tas”).
+        Use the slider to move through months; use the dropdown to switch between absolute temperature and
+        month-over-month change. Hover the map: the legend’s pointer moves to the hovered value, and a tooltip
+        shows date/lat/lon/value. Canvas is used for fast raster drawing; D3 drives scales, data loading, and the legend.
+      </p>
+    </section>
+  </main>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
