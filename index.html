@@ -3,65 +3,157 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>How does American region’s temperature change through time</title>
-  <link rel="stylesheet" href="./style.css" />
-  <script type="module" src="https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm"></script>
+  <title>How does American region’s temperature change through time?</title>
+
+  <!-- styles & app script (JS/CSS will be added later) -->
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preload" href="data/manifest.json" as="fetch" type="application/json" crossorigin>
+
+  <!-- D3 code will live in main.js (don’t write it yet) -->
+  <script type="module" src="main.js"></script>
 </head>
 <body>
-  <main class="page">
-    <h1>How does American region’s temperature change through time</h1>
+  <a class="skip-link" href="#viz">Skip to visualization</a>
 
+  <header class="site-header">
+    <h1>How does American region’s temperature change through time?</h1>
+    <p class="subtitle">CMIP6 monthly near-surface temperature over the Americas, 1850–2014</p>
+  </header>
+
+  <main id="content" class="page">
     <!-- Controls -->
-    <section class="controls" aria-labelledby="controls-title">
-      <h2 id="controls-title" class="visually-hidden">Controls</h2>
 
-      <label for="variable">Variable</label>
-      <select id="variable">
-        <option value="temp" selected>Temperature (K)</option>
-        <option value="rate">Rate of change (ΔK / month)</option>
-      </select>
 
-      <label for="time">Month</label>
-      <input id="time" type="range" min="0" max="0" step="1" value="0" />
-      <output id="time-label" for="time">—</output>
+    <section id="controls" class="controls" role="region" aria-labelledby="controls-title">
+      <h2 id="controls-title">Controls</h2>
+
+      <!-- Variable / “what to show” -->
+      <fieldset class="control-group" aria-label="Display variable">
+        <legend>Display</legend>
+        <label>
+          <input type="radio" name="metric" id="metric-temp" value="temperature" checked>
+          Temperature (°C)
+        </label>
+        <label>
+          <input type="radio" name="metric" id="metric-roc" value="rate">
+          Rate of change (Δ °C / month)
+        </label>
+      </fieldset>
+
+      <!-- Time slider (index over manifest; JS will map to YYYY-MM) -->
+      <fieldset class="control-group" aria-label="Time">
+        <legend>Time</legend>
+        <div class="time-row">
+          <button id="btn-back" type="button" aria-label="Step back one month">◀</button>
+          <button id="btn-play" type="button" aria-label="Play / pause animation">►</button>
+          <button id="btn-fwd"  type="button" aria-label="Step forward one month">▶</button>
+
+          <label for="time-slider" class="visually-hidden">Month</label>
+          <input id="time-slider" type="range" min="0" step="1" value="0" />
+          <output id="time-label" for="time-slider" aria-live="polite">1850-01</output>
+        </div>
+      </fieldset>
+
+      <!-- Region (scoped to Americas for v1; sub-region optional) -->
+      <fieldset class="control-group" aria-label="Region">
+        <legend>Region</legend>
+        <label>
+          <span>Domain</span>
+          <select id="region-select">
+            <option value="americas" selected>Americas (v1)</option>
+          </select>
+        </label>
+        <label>
+          <span>Sub-region</span>
+          <select id="subregion-select">
+            <option value="all" selected>All</option>
+            <option value="usa">USA</option>
+            <option value="california">California</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <!-- View options -->
+      <fieldset class="control-group" aria-label="View options">
+        <legend>View</legend>
+        <label>
+          <input type="checkbox" id="chk-grid" checked>
+          Show grid lines
+        </label>
+        <label>
+          <input type="checkbox" id="chk-borders" checked>
+          Show country borders
+        </label>
+        <button id="btn-reset" type="button">Reset view</button>
+      </fieldset>
     </section>
 
-    <!-- Viz stage -->
-    <section class="viz">
-      <div class="stage">
-        <!-- Canvas: 1px per grid cell; CSS scales it up -->
-        <canvas id="heatmap" aria-label="Temperature heatmap of the Americas"></canvas>
+    <!-- Visualization -->
+    <section id="viz" class="viz" role="region" aria-labelledby="viz-title">
+      <h2 id="viz-title">Heatmap</h2>
 
-        <!-- Hover tooltip -->
-        <dl id="tooltip" class="tooltip" hidden>
-          <dt>Date</dt><dd id="tt-date"></dd>
-          <dt>Lat</dt><dd id="tt-lat"></dd>
-          <dt>Lon</dt><dd id="tt-lon"></dd>
-          <dt>Value</dt><dd id="tt-val"></dd>
-        </dl>
-      </div>
+      <!-- map/heatmap surface -->
+      <figure class="figure-map stage">
+        <canvas id="heatmap-canvas"></canvas>
+        <!-- optional overlay for future gridlines; leave empty for now -->
+        <svg class="overlay" aria-hidden="true"></svg>
 
-      <!-- Legend -->
-      <figure class="legend-block">
-        <svg id="legend" viewBox="0 0 360 50" role="img" aria-label="Color legend">
-          <!-- gradient bar and ticks are injected by main.js -->
-        </svg>
-        <figcaption id="legend-caption">Temperature (K)</figcaption>
+        <figcaption id="hover-readout" aria-live="polite">
+          <span id="readout-date">1850-01</span> ·
+          <span>Lat <strong id="readout-lat">—</strong></span>,
+          <span>Lon <strong id="readout-lon">—</strong></span> ·
+          <span id="readout-value-label">Temp</span>:
+          <strong id="readout-value">—</strong>
+        </figcaption>
       </figure>
+
+      <!-- legend / color bar with hover pointer -->
+      <aside class="legend-block" aria-labelledby="legend-title">
+        <h3 id="legend-title">Color legend</h3>
+        <svg id="legend" viewBox="0 0 420 60" role="img" aria-label="Color scale">
+          <line id="legend-pointer" x1="0" y1="0" x2="0" y2="60" class="legend-pointer" />
+        </svg>
+        <div class="legend-scale">
+          <span id="legend-min">min</span>
+          <span aria-hidden="true">→</span>
+          <span id="legend-max">max</span>
+        </div>
+      </aside>
     </section>
 
-    <!-- Short write-up (meets deliverable) -->
-    <section class="writeup">
-      <h2>Design notes</h2>
+
+    <!-- Small stats / notes -->
+    <section id="summary" class="summary">
+      <h2>Summary</h2>
+      <dl class="stats">
+        <dt>Spatial resolution</dt><dd id="stat-res">—</dd>
+        <dt>Time range</dt><dd id="stat-range">1850-01 → 2014-12</dd>
+        <dt>Cells visible</dt><dd id="stat-cells">—</dd>
+      </dl>
+    </section>
+
+    <!-- Data + credits -->
+    <section id="about" class="about">
+      <h2>About this data</h2>
       <p>
-        The heatmap shows monthly near-surface air temperature over the Americas (CMIP6 “Amon / tas”).
-        Use the slider to move through months; use the dropdown to switch between absolute temperature and
-        month-over-month change. Hover the map: the legend’s pointer moves to the hovered value, and a tooltip
-        shows date/lat/lon/value. Canvas is used for fast raster drawing; D3 drives scales, data loading, and the legend.
+        Monthly CMIP6 near-surface air temperature (“tas”) over the Americas. Files are pre-exported to
+        per-month CSVs in <code>/data/americas/</code> with a <code>manifest.json</code> listing available months.
+      </p>
+      <p class="credits">
+        Sources: CMIP6 (NOAA / Pangeo). Built for DSC 106 Project 3. D3.js only; no server required.
       </p>
     </section>
   </main>
 
-  <script type="module" src="./main.js"></script>
+  <!-- Tooltip container (positioned by JS) -->
+  <div id="tooltip" class="tooltip" role="dialog" aria-live="polite" hidden>
+    <div class="tooltip-row"><span>Date</span><strong id="tt-date">—</strong></div>
+    <div class="tooltip-row"><span>Lat, Lon</span><strong id="tt-ll">—</strong></div>
+    <div class="tooltip-row"><span id="tt-label">Temp</span><strong id="tt-value">—</strong></div>
+  </div>
+
+  <noscript>
+    <p>This page needs JavaScript (D3) enabled to render the interactive heatmap.</p>
+  </noscript>
 </body>
 </html>
