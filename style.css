@@ -1,330 +1,72 @@
-/* =========================
-DSC106 Project 3 — style.css
-Layout, legend, tooltip, and control polish
-(no JavaScript here)
-========================= */
-
-/* ---------- Base + tokens ---------- */
-:root{
-/* page width */
---page-max: 1100px;
-
-/* brand accent (used for focus & highlights) */
---accent: oklch(65% 0.16 30);
-
-/* panel + card look */
---panel-bg: color-mix(in oklch, canvas 96%, black 4%);
---panel-border: oklch(85% 0.03 200 / .6);
-
-/* legend sizes */
---legend-height: 14px;
---legend-pointer-size: 10px; /* triangle height */
-
-/* spacing scale */
---s-1: .25rem;
---s-2: .5rem;
---s-3: .75rem;
---s-4: 1rem;
---s-5: 1.5rem;
---s-6: 2rem;
+/* Global styles */
+body {
+  font-family: system-ui, sans-serif;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 2rem;
 }
 
-html{
-color-scheme: light dark;          /* adapt to OS theme */
-accent-color: var(--accent);
+h1 {
+  margin-bottom: 1rem;
 }
 
-*,
-*::before,
-*::after { box-sizing: border-box; }
-
-body{
-margin: 0;
-font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-background: canvas;
-color: canvastext;
+/* Chart container */
+#chart {
+  width: 100%;
+  height: 400px;
 }
 
-main{
-max-width: var(--page-max);
-margin-inline: auto;
-padding: var(--s-5) var(--s-4);
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  font-family: system-ui, sans-serif;
+  font-size: 12px;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
 }
 
-h1{
-line-height: 1.15;
-margin: 0 0 var(--s-5);
-text-wrap: balance;
+/* Image gallery section */
+#image-gallery {
+  margin-top: 2rem;
 }
 
-p { margin-block: .6em 1em; }
-
-/* ---------- Page layout ---------- */
-
-/* Stack on mobile; split in two columns on larger screens */
-.layout{
-display: grid;
-gap: var(--s-5);
+#image-gallery h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
 }
 
-@media (min-width: 960px){
-.layout{
-grid-template-columns: 360px 1fr;
-align-items: start;
-}
-}
-
-/* ---------- Controls panel ---------- */
-.controls{
-background: var(--panel-bg);
-border: 1px solid var(--panel-border);
-border-radius: .66rem;
-padding: var(--s-5);
+/* Large stacked images */
+.images-container {
+  display: block; /* stack images vertically */
+  gap: 20px;
 }
 
-.controls h2{
-margin: 0 0 var(--s-3);
-font-size: 1.1rem;
+.images-container img {
+  width: 100%; /* full width */
+  max-width: 900px; /* optional max width */
+  height: auto;
+  margin: 1rem auto; /* center images */
+  border-radius: 6px;
+  transition: transform 0.3s ease, filter 0.3s ease;
+  cursor: pointer;
+  display: block;
 }
 
-.controls form{
-display: grid;
-grid-template-columns: 1fr; /* stack labels/inputs on narrow */
-gap: var(--s-3);
+/* Hover effect for subtle zoom */
+.images-container img:hover {
+  transform: scale(1.02);
 }
 
-.controls .field{
-display: grid;
-grid-template-columns: 12rem 1fr; /* label / control */
-align-items: center;
-gap: var(--s-3);
+/* Click to enlarge */
+.images-container img.active {
+  transform: scale(1.05);
+  z-index: 1;
 }
 
-.controls label{
-justify-self: start;
-font-weight: 600;
-}
-
-.controls select,
-.controls input[type="range"],
-.controls output{
-font: inherit;
-}
-
-/* Date readout next to slider */
-#time-readout{
-font-weight: 600;
-justify-self: start;
-}
-
-/* Slider cosmetics (cross-browser minimal) */
-input[type="range"]{
-width: 100%;
-height: 1.25rem;
-background: transparent;
-cursor: pointer;
-}
-input[type="range"]::-webkit-slider-runnable-track{
-height: 6px;
-background: linear-gradient(to right, color-mix(in oklch, var(--accent), canvas 85%), color-mix(in oklch, var(--accent), canvas 70%));
-border-radius: 999px;
-}
-input[type="range"]::-webkit-slider-thumb{
--webkit-appearance: none;
-width: 18px; height: 18px;
-margin-top: -6px;          /* center on track */
-border-radius: 50%;
-background: canvas;
-border: 2px solid var(--accent);
-box-shadow: 0 1px 4px rgba(0,0,0,.15);
-}
-input[type="range"]::-moz-range-track{
-height: 6px;
-background: linear-gradient(to right, color-mix(in oklch, var(--accent), canvas 85%), color-mix(in oklch, var(--accent), canvas 70%));
-border-radius: 999px;
-}
-input[type="range"]::-moz-range-thumb{
-width: 18px; height: 18px;
-border-radius: 50%;
-background: canvas;
-border: 2px solid var(--accent);
-}
-
-/* Group helper (keeps related items tight) */
-.group{
-display: grid;
-gap: var(--s-2);
-}
-
-/* ---------- Viz stage (canvas + optional SVG overlay) ---------- */
-.viz{
-display: grid;
-gap: var(--s-4);
-}
-
-/* Stage uses relative so overlays can be absolutely positioned */
-.stage{
-position: relative;
-border-radius: .5rem;
-overflow: clip;
-border: 1px solid var(--panel-border);
-background: color-mix(in oklch, canvas 94%, black 6%);
-}
-
-/* Raster canvas: fill width; keep pixels crisp when zoomed */
-#heatmap-canvas,
-#raster,
-canvas{
-display: block;
-width: 100%;
-height: auto;
-image-rendering: pixelated;
-image-rendering: crisp-edges;
-background: black;  /* seen while loading first frame */
-}
-
-/* Optional SVG overlay (grids / lat-lon labels) sits on top */
-.stage svg.overlay{
-position: absolute;
-inset: 0;
-pointer-events: none; /* don’t steal hover from canvas */
-}
-
-/* ---------- Legend (SVG or HTML) ---------- */
-
-.legend{
-position: relative;        /* to position the pointer */
-display: grid;
-align-items: center;
-gap: var(--s-2);
-}
-
-/* When legend is SVG, we still keep this wrapper for spacing */
-.legend-row{
-display: grid;
-gap: var(--s-2);
-}
-
-/* Horizontal gradient bar (HTML fallback) */
-.legend-bar{
-position: relative;
-height: var(--legend-height);
-border: 1px solid var(--panel-border);
-border-radius: 2px;
-background: linear-gradient(90deg, #2c7bb6, #ffffbf, #d7191c); /* JS will overwrite via <defs> in SVG */
-}
-
-/* Axis labels (HTML fallback) */
-.legend-axis{
-display: flex;
-justify-content: space-between;
-font-size: .85rem;
-opacity: .85;
-}
-
-/* Pointer rendered as a tiny triangle; left position driven by CSS var --legend-x (%) */
-.legend-pointer{
-position: absolute;
-left: calc(var(--legend-x, 50%) - .5px);
-bottom: calc(100% + 2px);
-width: 0; height: 0;
-border-left: 6px solid transparent;
-border-right: 6px solid transparent;
-border-top: var(--legend-pointer-size) solid var(--accent);
-filter: drop-shadow(0 1px 1px rgba(0,0,0,.25));
-}
-
-/* If you also draw the pointer inside SVG, make it visible */
-svg .legend-pointer{
-stroke: var(--accent);
-stroke-width: 2;
-}
-
-/* Legend caption */
-.legend-title{
-font-weight: 600;
-font-size: .95rem;
-}
-
-/* ---------- Tooltip ---------- */
-
-.tooltip{
-position: fixed;           /* positioned near cursor via JS */
-inset: auto auto 1rem 1rem;/* safe default if JS not yet moved it */
-max-width: 28ch;
-padding: .6rem .75rem;
-border-radius: .5rem;
-background: rgba(255,255,255,.92);
-color: black;
-border: 1px solid rgba(0,0,0,.08);
-box-shadow:
-0 8px 24px rgba(0,0,0,.08),
-0 2px 8px rgba(0,0,0,.06);
-backdrop-filter: saturate(120%) blur(6px);
--webkit-backdrop-filter: saturate(120%) blur(6px);
-font-size: .95rem;
-pointer-events: none;      /* don’t block mousemove on canvas */
-z-index: 10;
-transition: opacity .25s ease, visibility .25s ease, transform .2s ease;
-}
-
-@media (prefers-color-scheme: dark){
-.tooltip{
-background: rgba(24,24,24,.9);
-color: white;
-border-color: rgba(255,255,255,.08);
-}
-}
-
-.tooltip[hidden]{
-opacity: 0;
-visibility: hidden;
-transform: translateY(-4px);
-}
-
-.tooltip dl{
-margin: 0;
-display: grid;
-grid-template-columns: auto 1fr;
-gap: .2rem .75rem;
-}
-.tooltip dt{
-margin: 0;
-font-size: .75rem;
-text-transform: uppercase;
-letter-spacing: .04em;
-opacity: .7;
-}
-.tooltip dd{
-margin: 0;
-font-weight: 600;
-word-break: break-word;
-}
-
-/* ---------- Write-up / notes ---------- */
-.writeup{
-margin-top: var(--s-6);
-padding-top: var(--s-5);
-border-top: 1px dashed var(--panel-border);
-}
-
-/* ---------- Helpers ---------- */
-.sr-only{
-position: absolute !important;
-width: 1px; height: 1px;
-margin: -1px; padding: 0; border: 0;
-clip: rect(0 0 0 0); clip-path: inset(50%);
-overflow: hidden;
-white-space: nowrap;
-}
-
-/* subtle focus ring for keyboard users */
-:focus-visible{
-outline: 2px solid var(--accent);
-outline-offset: 2px;
-}
-
-/* reduce motion nicety */
-@media (prefers-reduced-motion: reduce){
-*{ animation: none !important; transition: none !important; }
+/* Dim non-active images */
+.images-container img:not(.active) {
+  filter: brightness(0.9);
 }
