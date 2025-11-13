@@ -3,28 +3,31 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Alaska, The fastest warming state in the U.S.</title>
+  <title>Temperature Anomalies Visualization</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main>
-    <h1>Alaska, The fastest warming state in the U.S.</h1>
+    <h1>Team Name: VizBoyz</h1>
+    <h2>Members: Gabriel Maayah, Brighton Liu, Chentao Gong</h2>
+    <h3>DataSet: CMIP6</h3>
 
-    <!-- Interactive chart -->
-    <div id="chart" style="width: 100%; height: 400px;"></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('alaska')">Alaska</button>
+      <button class="tab" onclick="switchTab('us')">Continental U.S. (excluding Alaska)</button>
+    </div>
 
-    <!-- Large images stacked vertically -->
-    <section id="image-gallery">
-      <h2>Related Images</h2>
-      <div class="images-container">
-        <img src="images/line_chart_1.webp" alt="Description 1">
-        <img src="images/line_chart_3.webp" alt="Description 2">
-        <img src="images/image.webp" alt="Description 3">
-        <img src="images/imagecopy.webp" alt="Description 4">
-        <img src="images/line_chart_2.webp" alt="Description 5">
-        <img src="images/image_copy.webp" alt="Description 6">
-      </div>
-    </section>
+    <div id="alaska-content" class="tab-content active">
+      <h1>Alaska: The fastest warming state in the U.S.</h1>
+      <div class="loading" id="loading-alaska">Loading Alaska data...</div>
+      <div id="chart-alaska"></div>
+    </div>
+
+    <div id="us-content" class="tab-content">
+      <h1>Continental U.S. Temperature Anomalies (excluding Alaska)</h1>
+      <div class="loading" id="loading-us">Loading U.S. data...</div>
+      <div id="chart-us"></div>
+    </div>
   </main>
 
   <script type="module" src="main.js"></script>
