@@ -1,31 +1,49 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-// Track which charts have been initialized
-const initialized = { alaska: false, us: false };
+const initialized = { 
+  alaska: false, us: false, hawaii: false, kansas: false, florida: false, ny: false, california: false, washington: false 
+};
+
+const regionState = {
+  alaska: { data: [], selectedMonth: 'all', selectedSeason: 'all', regression: null },
+  us: { data: [], selectedMonth: 'all', selectedSeason: 'all', regression: null },
+  hawaii: { data: [], selectedMonth: 'all', selectedSeason: 'all', regression: null },
+  kansas: { data: [], selectedMonth: 'all', selectedSeason: 'all', regression: null },
+  florida: { data: [], selectedMonth: 'all', selectedSeason: 'all', regression: null },
+  ny: { data: [], selectedMonth: 'all', selectedSeason: 'all', regression: null },
+  california: { data: [], selectedMonth: 'all', selectedSeason: 'all', regression: null },
+  washington: { data: [], selectedMonth: 'all', selectedSeason: 'all', regression: null }
+};
 
 // Tab switching
 window.switchTab = function(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  
-  if (tab === 'alaska') {
-    document.querySelector('.tab:nth-child(1)').classList.add('active');
-    document.getElementById('alaska-content').classList.add('active');
-    if (!initialized.alaska) {
-      initialized.alaska = true;
-      createVisualization("#chart-alaska", "#loading-alaska", "alaska");
-    }
-  } else {
-    document.querySelector('.tab:nth-child(2)').classList.add('active');
-    document.getElementById('us-content').classList.add('active');
-    if (!initialized.us) {
-      initialized.us = true;
-      createVisualization("#chart-us", "#loading-us", "us");
+
+  const tabMap = {
+    alaska: [1, 'alaska'],
+    us: [2, 'us'],
+    hawaii: [3, 'hawaii'],
+    ny: [4, 'ny'],
+    florida: [5, 'florida'],
+    kansas: [6, 'kansas'],
+    california: [7, 'california'],
+    washington: [8, 'washington']
+  };
+
+  if(tabMap[tab]){
+    const [index, id] = tabMap[tab];
+    document.querySelector(`.tab:nth-child(${index})`).classList.add('active');
+    document.getElementById(`${id}-content`).classList.add('active');
+
+    if(!initialized[tab]){
+      initialized[tab] = true;
+      createVisualization(`#chart-${tab}`, `#loading-${tab}`, tab, `#filter-${tab}`);
     }
   }
 };
 
-// Shared tooltip
+// Tooltip
 const tooltip = d3.select("body").append("div")
   .style("position", "absolute")
   .style("background", "#333")
@@ -37,231 +55,246 @@ const tooltip = d3.select("body").append("div")
   .style("font-size", "12px")
   .style("z-index", "1000");
 
-// Create visualization for a region
-async function createVisualization(chartSelector, loadingSelector, region) {
+// Month & Season buttons
+const monthNames = ["All Months","January","February","March","April","May","June","July","August","September","October","November","December"];
+document.querySelectorAll('.month-buttons').forEach(div=>{
+  monthNames.forEach((name,i)=>{
+    const btn = document.createElement("button");
+    btn.className="month-btn"; 
+    btn.dataset.month=i===0?"all":i; 
+    btn.textContent=name;
+    if(i===0) btn.classList.add("active");
+    div.appendChild(btn);
+  });
+
+  const seasonFilter = document.createElement("div");
+  seasonFilter.className="season-filter";
+  seasonFilter.innerHTML=`
+    <div class="filter-label">Filter by Season</div>
+    <div class="season-buttons"></div>
+  `;
+  div.parentElement.appendChild(seasonFilter);
+
+  const seasons = [
+    {name:"All Seasons 🌎", value:"all"},
+    {name:"Winter ❄️", value:"winter"},
+    {name:"Spring 🌸", value:"spring"},
+    {name:"Summer ☀️", value:"summer"},
+    {name:"Fall 🍂", value:"fall"}
+  ];
+  const seasonButtons = seasonFilter.querySelector(".season-buttons");
+  seasons.forEach(s=>{
+    const btn=document.createElement("button");
+    btn.className="month-btn"; 
+    btn.dataset.season=s.value; 
+    btn.textContent=s.name;
+    if(s.value==="all") btn.classList.add("active");
+    seasonButtons.appendChild(btn);
+  });
+});
+
+// Create visualization
+async function createVisualization(chartSelector, loadingSelector, region, filterSelector){
   const chartDiv = d3.select(chartSelector);
   const loadingDiv = d3.select(loadingSelector);
-  
-  let dataAll = [];
+  const filterDiv = d3.select(filterSelector);
+  const dataAll = [];
 
-  function parseDate(monthStr) {
-    const [year, month] = monthStr.split("-").map(Number);
-    return new Date(year, month - 1, 1);
-  }
+  const parseDate = str => { const [y,m] = str.split("-").map(Number); return new Date(y,m-1,1); };
 
-  function filterByRegion(d) {
-    const lat = +d.lat;
-    let lon = +d.lon;
-    if (lon < 0) lon += 360;
-    
-    if (region === 'alaska') {
-      return lat >= 51 && lat <= 72 && lon >= 190 && lon <= 235;
-    } else {
-      return lat >= 25 && lat <= 49 && lon >= 235 && lon <= 294;
+  function filterByRegion(d){
+    let lat = +d.lat;
+    let lon = +d.lon; if(lon<0) lon+=360;
+    switch(region){
+      case "alaska": return lat>=51&&lat<=72&&lon>=190&&lon<=235;
+      case "us": return lat>=25&&lat<=49&&lon>=235&&lon<=294;
+      case "hawaii": return lat>=18&&lat<=23&&lon>=199&&lon<=207;
+      case "kansas": return lat>=36&&lat<=40&&lon>=-102+360&&lon<=-94+360;
+      case "florida": return lat>=24&&lat<=31&&lon>=-87+360&&lon<=-80+360;
+      case "ny": return lat>=40&&lat<=45&&lon>=-80+360&&lon<=-73+360;
+      case "california": return lat>=32&&lat<=42&&lon>=-125+360&&lon<=-114+360;
+      case "washington": return lat>=46&&lat<=49&&lon>=-125+360&&lon<=-116+360;
     }
   }
 
-  async function computeMonthlyBaseline(months) {
-    const monthlyTemps = Array.from({length: 12}, () => []);
-    
-    for (const month of months) {
-      try {
-        const csvData = await d3.csv(`data/americas/${month}.csv`);
+  async function computeMonthlyBaseline(months){
+    const monthlyTemps = Array.from({length:12},()=>[]);
+    for(const m of months){
+      try{
+        const csvData = await d3.csv(`data/americas/${m}.csv`);
         const regionData = csvData.filter(filterByRegion);
-        if (regionData.length === 0) continue;
-        const avgTemp = d3.mean(regionData, d => +d.tas_k);
-        const m = parseInt(month.split("-")[1], 10) - 1;
-        monthlyTemps[m].push(avgTemp);
-      } catch (err) {
-        console.error(`Failed to load ${month} for baseline:`, err);
-      }
+        if(regionData.length){
+          const avg = d3.mean(regionData,d=>+d.tas_k);
+          monthlyTemps[parseInt(m.split("-")[1])-1].push(avg);
+        }
+      }catch(e){ console.warn("Missing:", m); }
     }
-    
-    return monthlyTemps.map(arr => arr.length > 0 ? d3.mean(arr) : null);
+    return monthlyTemps.map(arr=>arr.length?d3.mean(arr):null);
   }
 
-  async function loadData() {
-    const months = [];
-    for (let year = 1987; year <= 2014; year++) {
-      for (let month = 1; month <= 12; month++) {
-        months.push(`${year}-${String(month).padStart(2,'0')}`);
-      }
-    }
+  async function loadData(){
+    const months=[];
+    for(let y=1987;y<=2014;y++) for(let m=1;m<=12;m++) months.push(`${y}-${String(m).padStart(2,"0")}`);
+    const baseline=await computeMonthlyBaseline(months);
 
-    const baseline = await computeMonthlyBaseline(months);
-
-    for (const month of months) {
-      try {
-        const csvData = await d3.csv(`data/americas/${month}.csv`);
+    for(const m of months){
+      try{
+        const csvData = await d3.csv(`data/americas/${m}.csv`);
         const regionData = csvData.filter(filterByRegion);
-        if (regionData.length === 0) continue;
-
-        const avgTemp = d3.mean(regionData, d => +d.tas_k);
-        const monthIndex = parseInt(month.split("-")[1],10)-1;
-        if (baseline[monthIndex] === null) continue;
-
-        const anomaly = avgTemp - baseline[monthIndex];
-        dataAll.push({ date: parseDate(month), anomaly, tempK: avgTemp });
-      } catch (err) {
-        console.error(`Failed to load ${month}:`, err);
-      }
+        if(!regionData.length) continue;
+        const avg=d3.mean(regionData,d=>+d.tas_k);
+        const monthIdx=parseInt(m.split("-")[1])-1;
+        if(baseline[monthIdx]==null) continue;
+        dataAll.push({ date:parseDate(m), anomaly:avg-baseline[monthIdx], tempK:avg });
+      }catch(e){ console.warn("Failed:", m); }
     }
 
-    if (dataAll.length === 0) {
-      loadingDiv.text(`No data found for ${region}. Check console for details.`);
-      return;
-    }
+    if(!dataAll.length){ loadingDiv.text(`No data found for ${region}`); return; }
 
-    loadingDiv.style("display", "none");
+    regionState[region].data = dataAll;
+    loadingDiv.style("display","none");
+    setupFilters();
     drawChart();
   }
 
-  function drawChart() {
-    const margin = {top: 30, right: 40, bottom: 60, left: 100};
-    const containerWidth = chartDiv.node().clientWidth;
-    const width = containerWidth - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+  function setupFilters(){
+    filterDiv.selectAll(".month-btn[data-month]").on("click",function(){
+      const selected=this.getAttribute("data-month");
+      filterDiv.selectAll(".month-btn[data-month]").classed("active",false);
+      d3.select(this).classed("active",true);
+      regionState[region].selectedMonth=selected;
+      drawChart();
+    });
 
-    // Clear any existing content
+    filterDiv.selectAll(".month-btn[data-season]").on("click",function(){
+      const selected=this.getAttribute("data-season");
+      filterDiv.selectAll(".month-btn[data-season]").classed("active",false);
+      d3.select(this).classed("active",true);
+      regionState[region].selectedSeason=selected;
+      drawChart();
+    });
+  }
+
+  function getFilteredData(){
+    const { selectedMonth, selectedSeason } = regionState[region];
+    let filtered = regionState[region].data;
+    if(selectedMonth!=="all") filtered=filtered.filter(d=>d.date.getMonth()+1===+selectedMonth);
+    if(selectedSeason!=="all"){
+      const seasonMonths={winter:[12,1,2],spring:[3,4,5],summer:[6,7,8],fall:[9,10,11]};
+      filtered = filtered.filter(d=>seasonMonths[selectedSeason].includes(d.date.getMonth()+1));
+    }
+    return filtered;
+  }
+
+  function drawChart(){
+    const data=getFilteredData();
+    const margin={top:30,right:40,bottom:60,left:100};
+    const w=chartDiv.node().clientWidth-margin.left-margin.right;
+    const h=400-margin.top-margin.bottom;
     chartDiv.html("");
 
-    const svg = chartDiv.append("svg")
-      .attr("width", containerWidth)
-      .attr("height", 400)
+    const svg=chartDiv.append("svg")
+      .attr("width", w+margin.left+margin.right)
+      .attr("height", h+margin.top+margin.bottom)
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const xScale = d3.scaleBand().range([0, width]).padding(0.1);
-    const xTimeScale = d3.scaleTime().range([0, width]);
-    const yScale = d3.scaleLinear().range([height, 0]);
+    const xTime = d3.scaleTime().range([0,w]).domain(d3.extent(data,d=>d.date));
+    const y = d3.scaleLinear().range([h,0]).domain(d3.extent(data,d=>d.anomaly)).nice();
+    const xBand = d3.scaleBand().domain(data.map(d=>d.date)).range([0,w]).padding(0.1);
 
-    xScale.domain(dataAll.map(d => d.date));
-    xTimeScale.domain(d3.extent(dataAll, d => d.date));
-    yScale.domain(d3.extent(dataAll, d => d.anomaly)).nice();
-
-    // X-axis
-    const xAxis = svg.append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(xTimeScale).ticks(d3.timeYear.every(2)).tickFormat(d3.timeFormat("%Y")));
-    
-    xAxis.selectAll("text")
-      .style("fill", "#000")
-      .style("font-size", "12px");
-    
-    xAxis.selectAll("line")
-      .style("stroke", "#666");
-    
-    xAxis.select(".domain")
-      .style("stroke", "#666");
-
-    // X-axis label
-    svg.append("text")
-      .attr("x", width / 2)
-      .attr("y", height + 45)
-      .style("text-anchor", "middle")
-      .style("fill", "#000")
-      .style("font-size", "13px")
-      .text("Year");
-
-    // Y-axis
-    const yAxis = svg.append("g")
-      .attr("class", "y-axis")
-      .call(d3.axisLeft(yScale).ticks(8).tickFormat(d => (d>0?"+":"")+d.toFixed(2)+" K"));
-    
-    yAxis.selectAll("text")
-      .style("fill", "#000")
-      .style("font-size", "11px");
-    
-    yAxis.selectAll("line")
-      .style("stroke", "#666");
-    
-    yAxis.select(".domain")
-      .style("stroke", "#666");
-
-    // Y-axis label
-    svg.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", -margin.left + 15)
-      .attr("x", -(height / 2))
-      .style("text-anchor", "middle")
-      .style("fill", "#000")
-      .style("font-size", "13px")
-      .text("Difference in Average Monthly Temperature (K)");
-
-    // Zero line
-    svg.append("line")
-      .attr("x1", 0).attr("x2", width)
-      .attr("y1", yScale(0)).attr("y2", yScale(0))
-      .attr("stroke", "#888").attr("stroke-width", 1).attr("stroke-dasharray", "4,2");
-
-    // Regression line
-    const x = dataAll.map(d => d.date.getTime());
-    const y = dataAll.map(d => d.anomaly);
-    const n = x.length;
-    const xMean = d3.mean(x), yMean = d3.mean(y);
-
-    let num=0, den=0;
-    for (let i=0;i<n;i++){num+=(x[i]-xMean)*(y[i]-yMean); den+=(x[i]-xMean)**2;}
-    const slope = num/den, intercept = yMean-slope*xMean;
-    const regLine = [{date:new Date(x[0]), anomaly:slope*x[0]+intercept},{date:new Date(x[n-1]), anomaly:slope*x[n-1]+intercept}];
-
-    svg.append("path")
-      .datum(regLine)
-      .attr("fill","none")
-      .attr("stroke","#ffcc00")
-      .attr("stroke-width",2)
-      .attr("stroke-dasharray","5,5")
-      .attr("d", d3.line().x(d=>xTimeScale(d.date)).y(d=>yScale(d.anomaly)));
+    svg.append("g").attr("transform",`translate(0,${h})`).call(d3.axisBottom(xTime).ticks(d3.timeYear.every(2)).tickFormat(d3.timeFormat("%Y")));
+    svg.append("text").attr("x",w/2).attr("y",h+45).style("text-anchor","middle").text("Date");
+    svg.append("g").call(d3.axisLeft(y).ticks(8).tickFormat(d=>`${d>0?'+':''}${d.toFixed(2)} K`));
+    svg.append("text").attr("transform","rotate(-90)").attr("y",-margin.left+15).attr("x",-(h/2)).style("text-anchor","middle").text("Difference in Average Monthly Temperature (K)");
+    svg.append("line").attr("x1",0).attr("x2",w).attr("y1",y(0)).attr("y2",y(0)).attr("stroke","#888").attr("stroke-dasharray","4,2");
 
     // Bars
-    svg.selectAll(".bar")
-      .data(dataAll)
-      .enter()
-      .append("rect")
+    const bars = svg.selectAll(".bar").data(data).enter().append("rect")
       .attr("class","bar")
-      .attr("x", d=>xScale(d.date))
-      .attr("width", xScale.bandwidth())
-      .attr("y", yScale(0))
+      .attr("x",d=>xBand(d.date))
+      .attr("y",y(0))
+      .attr("width",xBand.bandwidth())
       .attr("height",0)
-      .attr("fill", d=>d.anomaly>=0?"#e74c3c":"#3498db")
-      .attr("opacity", 0.8)
-      .transition().delay((d,i)=>i*20).duration(300)
-      .attr("y", d=>d.anomaly>=0?yScale(d.anomaly):yScale(0))
-      .attr("height", d=>Math.abs(yScale(d.anomaly)-yScale(0)));
+      .attr("fill",d=>d.anomaly>=0?"#e74c3c":"#3498db");
 
-    // Interaction overlay
-    svg.append("rect")
-      .attr("width", width).attr("height", height)
-      .attr("fill", "none").attr("pointer-events","all")
-      .on("mousemove", function(event){
-        const [mx] = d3.pointer(event, svg.node());
-        const x0 = xTimeScale.invert(mx);
-        const bisect = d3.bisector(d=>d.date).left;
-        const i = bisect(dataAll, x0);
-        const d0 = dataAll[i-1], d1 = dataAll[i];
-        let d = d0;
-        if(d1&&d0&&(x0-d0.date>d1.date-x0)) d=d1;
-        if(!d) return;
+    bars.transition().delay((d,i)=>i*5).duration(300)
+        .attr("y",d=>d.anomaly>=0?y(d.anomaly):y(0))
+        .attr("height",d=>Math.abs(y(d.anomaly)-y(0)))
+        .on("end",(_,i)=>{ if(i===data.length-1) enableHover(); });
 
-        svg.selectAll(".bar").attr("stroke","none").attr("opacity", 0.8);
-        svg.selectAll(".bar").filter(b=>b===d).attr("stroke","#fff").attr("stroke-width",2).attr("opacity", 1);
+    // Regression
+    if(data.length>1){
+      const xVals = data.map(d=>d.date.getTime());
+      const yVals = data.map(d=>d.anomaly);
+      const xMean = d3.mean(xVals), yMean = d3.mean(yVals);
+      const slope = d3.sum(xVals.map((xi,i)=>(xi-xMean)*(yVals[i]-yMean))) / d3.sum(xVals.map(xi=>(xi-xMean)**2));
+      const intercept = yMean - slope*xMean;
+      const regLine = [
+        {date:new Date(xVals[0]), anomaly:slope*xVals[0]+intercept},
+        {date:new Date(xVals[xVals.length-1]), anomaly:slope*xVals[xVals.length-1]+intercept}
+      ];
+      regionState[region].regression = regLine;
 
-        tooltip.style("opacity",1).html(`
-          <strong>${d3.timeFormat("%Y-%m")(d.date)}</strong><br>
-          Temp: ${d.tempK.toFixed(2)} K<br>
-          Anomaly: ${d.anomaly>=0?'+':''}${d.anomaly.toFixed(2)} K
-        `).style("left",(event.pageX+15)+"px").style("top",(event.pageY-25)+"px");
-      })
-      .on("mouseout",()=>{
-        svg.selectAll(".bar").attr("stroke","none").attr("opacity", 0.8); 
-        tooltip.style("opacity",0);
-      });
+      svg.append("path").datum(regLine)
+        .attr("fill","none")
+        .attr("stroke","#ffcc00")
+        .attr("stroke-width",2)
+        .attr("stroke-dasharray","5,5")
+        .attr("d", d3.line().x(d=>xTime(d.date)).y(d=>y(d.anomaly)));
+    }
+
+    // Alaska regression overlay
+    if(region !== "alaska" && regionState.alaska.regression){
+      svg.append("path").datum(regionState.alaska.regression)
+        .attr("fill","none")
+        .attr("stroke","#2ecc71AA") // green
+        .attr("stroke-width",2)
+        .attr("stroke-dasharray","5,5")
+        .attr("d", d3.line().x(d=>xTime(d.date)).y(d=>y(d.anomaly)));
+
+      // Legend
+      const legend = svg.append("g").attr("class","legend").attr("transform",`translate(${w-150},10)`);
+      legend.append("line")
+            .attr("x1",0).attr("y1",0).attr("x2",30).attr("y2",0)
+            .attr("stroke","#2ecc71AA").attr("stroke-width",2).attr("stroke-dasharray","5,5");
+      legend.append("text")
+            .attr("x",35).attr("y",5)
+            .text("Alaska Regression")
+            .style("font-size","12px").style("fill","#000")
+            .attr("alignment-baseline","middle");
+    }
+
+
+
+  // Hover
+    function enableHover(){
+      svg.append("rect").attr("width",w).attr("height",h).attr("fill","none").attr("pointer-events","all")
+        .on("mousemove",function(event){
+          const [mx]=d3.pointer(event,this);
+          const x0=xTime.invert(mx);
+          const i=d3.bisector(d=>d.date).left(data,x0);
+          const d=data[i-1] && data[i]? (x0-data[i-1].date>data[i].date-x0?data[i]:data[i-1]):data[i]||data[i-1];
+          if(!d) return;
+
+          svg.selectAll(".bar").attr("opacity",b=>b===d?1:0.6)
+            .attr("transform",b=>b===d?`scale(1.25,1.25)`:"scale(1,1)")
+            .attr("transform-origin",b=>`${xBand(b.date)+xBand.bandwidth()/2}px ${y(Math.max(0,b.anomaly))}px`);
+
+          tooltip.style("opacity",1).html(`<strong>${d3.timeFormat("%Y-%m")(d.date)}</strong><br>Temp: ${d.tempK.toFixed(2)} K<br>Difference in Temperature: ${d.anomaly>=0?'+':''}${d.anomaly.toFixed(2)} K`)
+            .style("left",`${event.pageX+15}px`).style("top",`${event.pageY-25}px`);
+        })
+        .on("mouseout",function(){
+          tooltip.style("opacity",0);
+          svg.selectAll(".bar").attr("opacity",1).attr("transform","scale(1,1)");
+        });
+    }
+
+
   }
 
   await loadData();
 }
 
-// Initialize Alaska chart on page load
-initialized.alaska = true;
-createVisualization("#chart-alaska", "#loading-alaska", "alaska");
+// Initialize first tab
+switchTab("alaska");

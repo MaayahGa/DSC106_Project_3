@@ -3,31 +3,116 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Temperature Anomalies Visualization</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Alaska, The Fastest Warming State</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main>
-    <h1>Team Name: VizBoyz</h1>
-    <h2>Members: Gabriel Maayah, Brighton Liu, Chentao Gong</h2>
-    <h3>DataSet: CMIP6</h3>
-
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('alaska')">Alaska</button>
-      <button class="tab" onclick="switchTab('us')">Continental U.S. (excluding Alaska)</button>
+    <div class="header">
+      <h1>🌡️ Alaska, The Fastest Warming State</h1>
+      <h2>Team VizBoyz: Gabriel Maayah, Brighton Liu, Chentao Gong</h2>
+      <h3>Dataset: CMIP6 Climate Model Data (1987–2014)</h3>
     </div>
 
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('alaska')">🏔️ Alaska</button>
+      <button class="tab" onclick="switchTab('us')">🇺🇸 Continental U.S.</button>
+      <button class="tab" onclick="switchTab('hawaii')">🌺 Hawaii</button>
+      <button class="tab" onclick="switchTab('ny')">🗽 New York</button>
+      <button class="tab" onclick="switchTab('florida')">🌴 Florida</button>
+      <button class="tab" onclick="switchTab('kansas')">🌾 Kansas</button>
+      <button class="tab" onclick="switchTab('california')">🏄 California</button>
+      <button class="tab" onclick="switchTab('washington')">🌲 Washington</button>
+    </div>
+
+    <!-- Alaska -->
     <div id="alaska-content" class="tab-content active">
-      <h1>Alaska: The fastest warming state in the U.S.</h1>
-      <div class="loading" id="loading-alaska">Loading Alaska data...</div>
+      <h1>Alaska Change in Temperature</h1>
+      <div class="month-filter" id="filter-alaska">
+        <div class="filter-label">Filter by Month</div>
+        <div class="month-buttons"></div>
+      </div>
+      <div class="loading" id="loading-alaska">Loading Alaska data</div>
       <div id="chart-alaska"></div>
     </div>
 
+    <!-- Continental U.S. -->
     <div id="us-content" class="tab-content">
-      <h1>Continental U.S. Temperature Anomalies (excluding Alaska)</h1>
-      <div class="loading" id="loading-us">Loading U.S. data...</div>
+      <h1>Continental U.S. Change in Temperature</h1>
+      <div class="month-filter" id="filter-us">
+        <div class="filter-label">Filter by Month</div>
+        <div class="month-buttons"></div>
+      </div>
+      <div class="loading" id="loading-us">Loading U.S. data</div>
       <div id="chart-us"></div>
     </div>
+
+    <!-- Hawaii -->
+    <div id="hawaii-content" class="tab-content">
+      <h1>Hawaii Change in Temperature</h1>
+      <div class="month-filter" id="filter-hawaii">
+        <div class="filter-label">Filter by Month</div>
+        <div class="month-buttons"></div>
+      </div>
+      <div class="loading" id="loading-hawaii">Loading Hawaii data</div>
+      <div id="chart-hawaii"></div>
+    </div>
+
+    <!-- New York -->
+    <div id="ny-content" class="tab-content">
+      <h1>New York Change in Temperature</h1>
+      <div class="month-filter" id="filter-ny">
+        <div class="filter-label">Filter by Month</div>
+        <div class="month-buttons"></div>
+      </div>
+      <div class="loading" id="loading-ny">Loading New York data</div>
+      <div id="chart-ny"></div>
+    </div>
+
+    <!-- Florida -->
+    <div id="florida-content" class="tab-content">
+      <h1>Florida Change in Temperature</h1>
+      <div class="month-filter" id="filter-florida">
+        <div class="filter-label">Filter by Month</div>
+        <div class="month-buttons"></div>
+      </div>
+      <div class="loading" id="loading-florida">Loading Florida data</div>
+      <div id="chart-florida"></div>
+    </div>
+
+    <!-- Kansas -->
+    <div id="kansas-content" class="tab-content">
+      <h1>Kansas Change in Temperature</h1>
+      <div class="month-filter" id="filter-kansas">
+        <div class="filter-label">Filter by Month</div>
+        <div class="month-buttons"></div>
+      </div>
+      <div class="loading" id="loading-kansas">Loading Kansas data</div>
+      <div id="chart-kansas"></div>
+    </div>
+
+    <!-- California -->
+    <div id="california-content" class="tab-content">
+      <h1>California Change in Temperature</h1>
+      <div class="month-filter" id="filter-california">
+        <div class="filter-label">Filter by Month</div>
+        <div class="month-buttons"></div>
+      </div>
+      <div class="loading" id="loading-california">Loading California data</div>
+      <div id="chart-california"></div>
+    </div>
+
+    <!-- Washington -->
+    <div id="washington-content" class="tab-content">
+      <h1>Washington Change in Temperature</h1>
+      <div class="month-filter" id="filter-washington">
+        <div class="filter-label">Filter by Month</div>
+        <div class="month-buttons"></div>
+      </div>
+      <div class="loading" id="loading-washington">Loading Washington data</div>
+      <div id="chart-washington"></div>
+    </div>
+
   </main>
 
   <script type="module" src="main.js"></script>
