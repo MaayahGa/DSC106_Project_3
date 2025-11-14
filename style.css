@@ -237,3 +237,25 @@ main {
   font-size: 13px;
   color: #6c757d;
 }
+
+/* Write-up section styling */
+.writeup-section {
+  max-width: 900px;          /* keep text from stretching too wide */
+  margin: 40px auto 60px;    /* top and bottom space, center horizontally */
+  background: #ffffff;       /* white card, like the chart area */
+  padding: 24px 32px;        /* breathing room inside the card */
+  border-radius: 12px;       /* rounded corners */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);  /* soft shadow */
+  line-height: 1.6;          /* more comfortable line spacing */
+}
+
+.writeup-section h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 1.6rem;
+}
+
+.writeup-section p {
+  margin-bottom: 12px;
+  font-size: 0.98rem;
+}
