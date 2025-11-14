@@ -191,6 +191,74 @@
       </div>
 
     </div>
+    <section class="writeup-section">
+      <h2>Write-up</h2>
+
+      <p>
+        The project aims to show how Alaska’s average monthly and seasonal temperatures have changed over time
+        in comparison with other U.S. states, using climate model data. In order to help users quickly recognize
+        long-term warming patterns present in Alaska, we have implemented the following designs in our visualization:
+      </p>
+
+      <p>
+        <strong>Bar Charts &amp; Trend Line:</strong>
+        We chose a diverging bar chart to represent the monthly differences in average temperature.
+        Bar height makes it easy to compare positive vs. negative changes from the baseline, which is the average
+        of monthly temperatures across all years. Users can immediately see which months were warmer or cooler.
+        We added a button below the viz so that users can see clarification of how each bar is calculated, while
+        not being abrupt. Additionally, we also added a subtle dotted trend line to help users recognize the
+        long-term trend of warming without overwhelming the main chart.
+      </p>
+
+      <p>
+        <strong>Color Palette:</strong>
+        We used a bipolar red–blue color scheme, where red indicates temperatures warmer than average and blue
+        indicates temperatures cooler than average. These colors are intuitive and widely used in climate-related
+        visualizations. We also have considered using color saturation differences to help highlight differences
+        in magnitude, but it was rejected for distracting from the directional meaning of temperature change.
+        The dotted trend lines are either yellow or green to make it contrast with red and blue without
+        implying a third temperature category.
+      </p>
+
+      <p>
+        <strong>Navigation &amp; Filter Buttons:</strong>
+        The tabs across the top allow users to switch between states. This supports comparison across multiple
+        geographies while maintaining consistency in visual format. In these regional visualizations we included
+        the regression line of Alaska to make comparison easier. The month and season filter buttons enable users
+        to isolate patterns within a specific time period. This function can be helpful in testing hypotheses like
+        “Are winters warming faster than summers?” We also have considered dropdowns, but the tab format made
+        comparisons faster and reduced the number of clicks. In addition, we include icons next to state names and
+        seasons that provide visual identity. By default, we opted for “All Seasons” and “All Months” to provide
+        a big-picture perspective before users apply filters.
+      </p>
+
+      <p>
+        <strong>Hover on Bars:</strong>
+        The visualization omits some information to keep it clean and avoid overwhelming users, such as months,
+        absolute temperatures and precise magnitude of difference in temperature from the baseline. Including all
+        of these directly on the chart created visual clutter during early iterations and made the chart harder
+        to read at a glance. Instead, we surface these details through hover tooltips, so that precise values are
+        revealed only when the user expresses interest.
+      </p>
+      <p>
+        <strong>Visual Style:</strong>
+        We used a card-based interface with soft edges to give the visualization an accessible, modern feel. This improves readability and separates content sections clearly, such that the UI is not feeling cluttered despite numerous filter options.
+
+      </p>
+      <p>
+        <strong>Development Process:</strong>
+We spent around 15 hours developing our application with the work split accordingly between 3 people.
+
+Gabriel did the majority of the coding and actually making the website, he also recorded and submitted the checkpoint.
+
+Trent created multiple static graphs at the beginning that provided a really good foundation for what proposition we wanted to make. He also wrote this write up and ensured clarity and consistency in the visualizations by making sure all of the graphs and data made sense and were accurate.
+
+Brighton kept the whole group cohesive and focused on a certain goal by ensuring clear communication and setting up multiple meetings between all group members. He also polished the website by ensuring the graphs and actual proposition of our project was clear and easy for viewers to understand and proofread the writeup and did a final overview of everything before he  gave the go ahead to turn it in.
+
+Speaking about the aspects that took the most time, I believe determining our proposition took a lot of time.  We struggled to find a good question to answer with our data so we had to do a lot of research before we decided to go with Alaska being the fastest warming state in the U.S. Besides that, making the actual website presented a lot of challenges with actually presenting the graph. We struggled with speed of data loading onto the screen and thinking of ways to make the graph interactive to the viewer.
+
+      </p>
+    </section>
 
   </main>
 
