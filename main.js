@@ -121,11 +121,18 @@ function computeRegressionLine(dataForRegression, xRangeStartTime, xRangeEndTime
   if (den === 0) return null;
   const slope = num / den;
   const intercept = yMean - slope * xMean;
-  return [
+  const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+  const slopePerDecade = slope * msPerYear * 10;
+
+  const line = [
     { date: new Date(xRangeStartTime), anomaly: slope * xRangeStartTime + intercept },
     { date: new Date(xRangeEndTime),   anomaly: slope * xRangeEndTime   + intercept }
   ];
+  // attach slope info to the array so we can read it in the legend
+  line.slopePerDecade = slopePerDecade;
+  return line;
 };
+
 
 // Create visualization
 async function createVisualization(chartSelector, loadingSelector, region, filterSelector) {
@@ -280,6 +287,9 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
       const slope = d3.sum(xVals.map((xi, i) => (xi - xMean) * (yVals[i] - yMean))) /
                     d3.sum(xVals.map(xi => (xi - xMean) ** 2));
       const intercept = yMean - slope * xMean;
+      const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+      const slopePerDecade = slope * msPerYear * 10;
+
       const regLine = [
         { date: new Date(xVals[0]),              anomaly: slope * xVals[0]              + intercept },
         { date: new Date(xVals[xVals.length-1]), anomaly: slope * xVals[xVals.length-1] + intercept }
@@ -299,7 +309,7 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
       // Region legend
       const regionLegend = svg.append("g")
         .attr("class", "legend")
-        .attr("transform", `translate(${w - 170},10)`);
+        .attr("transform", `translate(${w - 230},10)`);
       regionLegend.append("line")
         .attr("x1", 0).attr("y1", 0).attr("x2", 30).attr("y2", 0)
         .attr("stroke", "#ffcc00")
@@ -308,7 +318,7 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
       regionLegend.append("text")
         .attr("x", 35)
         .attr("y", 5)
-        .text(`${region.charAt(0).toUpperCase() + region.slice(1)} Regression (${regLine[1].anomaly.toFixed(2)} K)`)
+        .text(`${region.charAt(0).toUpperCase() + region.slice(1)} Regression (${slopePerDecade >= 0 ? '+' : ''}${slopePerDecade.toFixed(2)} K/decade)`)
         .style("font-size", "12px")
         .style("fill", "#000")
         .attr("alignment-baseline", "middle");
@@ -340,7 +350,7 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
           // Alaska legend
           const legend = svg.append("g")
             .attr("class", "legend")
-            .attr("transform", `translate(${w - 170},30)`);
+            .attr("transform", `translate(${w - 230},30)`);
           legend.append("line")
             .attr("x1", 0).attr("y1", 0).attr("x2", 30).attr("y2", 0)
             .attr("stroke", "#2ecc71")
@@ -349,7 +359,7 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
           legend.append("text")
             .attr("x", 35)
             .attr("y", 5)
-            .text(`Alaska Regression (${alaskaRegLine[1].anomaly.toFixed(2)} K)`)
+            .text(`Alaska Regression (${alaskaRegLine.slopePerDecade >= 0 ? '+' : ''}${alaskaRegLine.slopePerDecade.toFixed(2)} K/decade)`)
             .style("font-size", "12px")
             .style("fill", "#000")
             .attr("alignment-baseline", "middle");
