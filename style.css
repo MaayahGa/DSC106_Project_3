@@ -206,3 +206,34 @@ main {
   .tab-content h1 { font-size: 1.5em; }
   .month-btn { padding: 10px 16px; font-size: 13px; }
 }
+
+.caption-toggle {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.caption-toggle-btn {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid #dee2e6;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #495057;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.caption-toggle-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 4px 8px rgba(102,126,234,0.3);
+}
+
+.chart-caption {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6c757d;
+}

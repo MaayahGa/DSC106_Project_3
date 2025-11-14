@@ -248,7 +248,7 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
       .attr("y", -margin.left + 15)
       .attr("x", -(h / 2))
       .style("text-anchor", "middle")
-      .text("Difference in Average Monthly Temperature (K)");
+      .text("Monthly Temperature Anomaly (K)");
 
     svg.append("line")
       .attr("x1", 0).attr("x2", w)
@@ -399,9 +399,25 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
         });
     }
   }
-
   loadData();
 }
+
+// Caption toggle: show/hide the explanation under each chart
+document.querySelectorAll('.caption-toggle-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const caption = btn.nextElementSibling;
+    if (!caption) return;
+
+    const isHidden = caption.hasAttribute('hidden');
+    if (isHidden) {
+      caption.removeAttribute('hidden');
+      btn.textContent = 'Hide explanation';
+    } else {
+      caption.setAttribute('hidden', '');
+      btn.textContent = 'find each bar confusing? click this';
+    }
+  });
+});
 
 // ✅ NEW: initialize Alaska immediately so its data & regression are ready
 window.switchTab('alaska');
