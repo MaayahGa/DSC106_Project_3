@@ -85,13 +85,41 @@ document.querySelectorAll('.month-buttons').forEach(div=>{
   const seasonButtons = seasonFilter.querySelector(".season-buttons");
   seasons.forEach(s=>{
     const btn=document.createElement("button");
-    btn.className="month-btn"; 
-    btn.dataset.season=s.value; 
-    btn.textContent=s.name;
+    btn.className="month-btn"; btn.dataset.season=s.value; btn.textContent=s.name;
     if(s.value==="all") btn.classList.add("active");
     seasonButtons.appendChild(btn);
   });
 });
+
+// Helper: apply month/season filters to a dataset
+function applyFiltersToData(data, monthFilter, seasonFilter) {
+  let filtered = data;
+  if (monthFilter && monthFilter !== "all") {
+    filtered = filtered.filter(d => d.date.getMonth() + 1 === +monthFilter);
+  }
+  if (seasonFilter && seasonFilter !== "all") {
+    const seasonMonths = { winter: [12,1,2], spring: [3,4,5], summer: [6,7,8], fall: [9,10,11] };
+    filtered = filtered.filter(d => seasonMonths[seasonFilter].includes(d.date.getMonth() + 1));
+  }
+  return filtered;
+}
+
+// Helper: compute linear regression line (returns two endpoints for given x-range)
+function computeRegressionLine(dataForRegression, xRangeStartTime, xRangeEndTime) {
+  if (!dataForRegression || dataForRegression.length < 2) return null;
+  const xVals = dataForRegression.map(d => d.date.getTime());
+  const yVals = dataForRegression.map(d => d.anomaly);
+  const xMean = d3.mean(xVals), yMean = d3.mean(yVals);
+  const num = d3.sum(xVals.map((xi, i) => (xi - xMean) * (yVals[i] - yMean)));
+  const den = d3.sum(xVals.map(xi => (xi - xMean) ** 2));
+  if (den === 0) return null;
+  const slope = num / den;
+  const intercept = yMean - slope * xMean;
+  return [
+    { date: new Date(xRangeStartTime), anomaly: slope * xRangeStartTime + intercept },
+    { date: new Date(xRangeEndTime), anomaly: slope * xRangeEndTime + intercept }
+  ];
+};
 
 // Create visualization
 async function createVisualization(chartSelector, loadingSelector, region, filterSelector){
@@ -177,21 +205,20 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
 
   function getFilteredData(){
     const { selectedMonth, selectedSeason } = regionState[region];
-    let filtered = regionState[region].data;
-    if(selectedMonth!=="all") filtered=filtered.filter(d=>d.date.getMonth()+1===+selectedMonth);
-    if(selectedSeason!=="all"){
-      const seasonMonths={winter:[12,1,2],spring:[3,4,5],summer:[6,7,8],fall:[9,10,11]};
-      filtered = filtered.filter(d=>seasonMonths[selectedSeason].includes(d.date.getMonth()+1));
-    }
-    return filtered;
+    return applyFiltersToData(regionState[region].data, selectedMonth, selectedSeason);
   }
 
   function drawChart(){
-    const data=getFilteredData();
+    const data = getFilteredData();
     const margin={top:30,right:40,bottom:60,left:100};
-    const w=chartDiv.node().clientWidth-margin.left-margin.right;
-    const h=400-margin.top-margin.bottom;
+    const w=chartDiv.node().clientWidth - margin.left - margin.right;
+    const h=400 - margin.top - margin.bottom;
     chartDiv.html("");
+
+    if (!data || data.length === 0) {
+      chartDiv.append("div").attr("class","loading").text("No data for this filter combination.");
+      return;
+    }
 
     const svg=chartDiv.append("svg")
       .attr("width", w+margin.left+margin.right)
@@ -223,7 +250,7 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
         .attr("height",d=>Math.abs(y(d.anomaly)-y(0)))
         .on("end",(_,i)=>{ if(i===data.length-1) enableHover(); });
 
-    // Regression
+    // Regression for this region
     if(data.length>1){
       const xVals = data.map(d=>d.date.getTime());
       const yVals = data.map(d=>d.anomaly);
@@ -242,32 +269,50 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
         .attr("stroke-width",2)
         .attr("stroke-dasharray","5,5")
         .attr("d", d3.line().x(d=>xTime(d.date)).y(d=>y(d.anomaly)));
+
+      // Region legend
+      const regionLegend = svg.append("g").attr("class","legend").attr("transform",`translate(${w-170},10)`);
+      regionLegend.append("line")
+          .attr("x1",0).attr("y1",0).attr("x2",30).attr("y2",0)
+          .attr("stroke","#ffcc00").attr("stroke-width",2).attr("stroke-dasharray","5,5");
+      regionLegend.append("text")
+          .attr("x",35).attr("y",5)
+          .text(`${region.charAt(0).toUpperCase() + region.slice(1)} Regression (${regLine[1].anomaly.toFixed(2)} K)`)
+          .style("font-size","12px").style("fill","#000")
+          .attr("alignment-baseline","middle");
     }
 
     // Alaska regression overlay
-    if(region !== "alaska" && regionState.alaska.regression){
-      svg.append("path").datum(regionState.alaska.regression)
-        .attr("fill","none")
-        .attr("stroke","#2ecc71AA") // green
-        .attr("stroke-width",2)
-        .attr("stroke-dasharray","5,5")
-        .attr("d", d3.line().x(d=>xTime(d.date)).y(d=>y(d.anomaly)));
+    if(region !== "alaska" && regionState.alaska.data && regionState.alaska.data.length){
+      const curMonth = regionState[region].selectedMonth;
+      const curSeason = regionState[region].selectedSeason;
+      const alaskaFiltered = applyFiltersToData(regionState.alaska.data, curMonth, curSeason);
+      if (alaskaFiltered && alaskaFiltered.length > 1) {
+        const alaskaRegLine = computeRegressionLine(alaskaFiltered, d3.min(data, d => d.date).getTime(), d3.max(data, d => d.date).getTime());
+        if (alaskaRegLine) {
+          svg.append("path").datum(alaskaRegLine)
+            .attr("fill","none")
+            .attr("stroke","#2ecc71")
+            .attr("stroke-opacity", 0.65)
+            .attr("stroke-width",2)
+            .attr("stroke-dasharray","5,5")
+            .attr("d", d3.line().x(d=>xTime(d.date)).y(d=>y(d.anomaly)));
 
-      // Legend
-      const legend = svg.append("g").attr("class","legend").attr("transform",`translate(${w-150},10)`);
-      legend.append("line")
-            .attr("x1",0).attr("y1",0).attr("x2",30).attr("y2",0)
-            .attr("stroke","#2ecc71AA").attr("stroke-width",2).attr("stroke-dasharray","5,5");
-      legend.append("text")
-            .attr("x",35).attr("y",5)
-            .text("Alaska Regression")
-            .style("font-size","12px").style("fill","#000")
-            .attr("alignment-baseline","middle");
+          // Alaska legend
+          const legend = svg.append("g").attr("class","legend").attr("transform",`translate(${w-170},30)`);
+          legend.append("line")
+                .attr("x1",0).attr("y1",0).attr("x2",30).attr("y2",0)
+                .attr("stroke","#2ecc71").attr("stroke-width",2).attr("stroke-dasharray","5,5");
+          legend.append("text")
+                .attr("x",35).attr("y",5)
+                .text(`Alaska Regression (${alaskaRegLine[1].anomaly.toFixed(2)} K)`)
+                .style("font-size","12px").style("fill","#000")
+                .attr("alignment-baseline","middle");
+        }
+      }
     }
 
-
-
-  // Hover
+    // Hover
     function enableHover(){
       svg.append("rect").attr("width",w).attr("height",h).attr("fill","none").attr("pointer-events","all")
         .on("mousemove",function(event){
@@ -282,19 +327,13 @@ async function createVisualization(chartSelector, loadingSelector, region, filte
             .attr("transform-origin",b=>`${xBand(b.date)+xBand.bandwidth()/2}px ${y(Math.max(0,b.anomaly))}px`);
 
           tooltip.style("opacity",1).html(`<strong>${d3.timeFormat("%Y-%m")(d.date)}</strong><br>Temp: ${d.tempK.toFixed(2)} K<br>Difference in Temperature: ${d.anomaly>=0?'+':''}${d.anomaly.toFixed(2)} K`)
-            .style("left",`${event.pageX+15}px`).style("top",`${event.pageY-25}px`);
-        })
-        .on("mouseout",function(){
-          tooltip.style("opacity",0);
+            .style("left",`${event.pageX+15}px`).style("top",`${event.pageY}px`);
+        }).on("mouseleave",function(){
           svg.selectAll(".bar").attr("opacity",1).attr("transform","scale(1,1)");
+          tooltip.style("opacity",0);
         });
     }
-
-
   }
 
-  await loadData();
+  loadData();
 }
-
-// Initialize first tab
-switchTab("alaska");
